@@ -1,3 +1,40 @@
+VERSION 1.6.0
+-------------
+
+NEW FEATURES
+
+    o Add fast colsum() method for ordinary matrices.
+
+    o Define low-level generics:
+        - subset_Array_by_logical_array()
+        - subset_Array_by_Lindex()
+        - subset_Array_by_Mindex()
+        - subset_Array_by_Nindex()
+      with default methods. Their purpose is to support subsetting (`[`)
+      of Array derivatives and to make it easier for developers of Array
+      extensions to implement subsetting for their objects.
+      They are not intended to be used directly by the end user.
+
+    o Define low-level generics:
+        - subassign_Array_by_logical_array()
+        - subassign_Array_by_Lindex()
+        - subassign_Array_by_Mindex()
+        - subassign_Array_by_Nindex()
+      with default methods. Their purpose is to support subassignment (`[<-`)
+      of Array derivatives and to make it easier for developers of Array
+      extensions to implement subassignment for their objects.
+      They are not intended to be used directly by the end user.
+
+SIGNIFICANT USER-VISIBLE CHANGES
+
+    o read_block() now uses SparseArray::extract_sparse_array() instead of
+      DelayedArray::OLD_extract_sparse_array() behind the scene to extract
+      and load sparse blocks from a sparse array-like object. As a consequence,
+      sparse blocks are now returned as SparseArray objects (implemented in
+      the SparseArray package) instead of SparseArraySeed objects (implemented
+      in the DelayedArray package).
+
+
 VERSION 1.4.0
 -------------
 
