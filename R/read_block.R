@@ -36,47 +36,15 @@ setMethod("read_block_as_dense", "ANY",
 ### read_block()
 ###
 
-### --- OLD read_block() behavior (BioC < 3.19) ---
-
-.load_DelayedArray_for_read_block <- function(...)
-    load_package_gracefully("DelayedArray", "calling read_block() ", ...)
-
-### Provides the old read_block() behavior (used in BioC < 3.20) where
-### a sparse block gets returned as a SparseArraySeed object from the
-### DelayedArray package.
-.OLD_read_block <- function(x, viewport, as.sparse=NA)
-{
-    if (is_sparse(x)) {
-        .load_DelayedArray_for_read_block("on a ", class(x), " object ")
-        ans <- DelayedArray::read_sparse_block(x, viewport)
-        if (isFALSE(as.sparse))
-            ans <- DelayedArray::sparse2dense(ans)
-    } else {
-        ans <- read_block_as_dense(x, viewport)
-        check_returned_array(ans, dim(viewport),
-                             "read_block_as_dense", class(x))
-        if (isTRUE(as.sparse)) {
-            .load_DelayedArray_for_read_block("with 'as.sparse=TRUE'")
-            ans <- DelayedArray::dense2sparse(ans)
-        }
-    }
-    ans
-}
-
-### --- NEW read_block() behavior (BioC >= 3.20) ---
-
 .load_SparseArray_for_read_block <- function(...)
     load_package_gracefully("SparseArray", "calling read_block() ", ...)
 
-### Provides the new read_block() behavior (used in BioC >= 3.20) where
-### a sparse block gets returned as a SparseArray object from the
-### new SparseArray package. Note that this new behavior makes use of
-### the new SparseArray::read_block_as_sparse() generic (replaces
-### DelayedArray::read_sparse_block()).
-.NEW_read_block <- function(x, viewport, as.sparse=NA)
+.read_block <- function(x, viewport, as.sparse=NA)
 {
     if (is_sparse(x)) {
         .load_SparseArray_for_read_block("on a ", class(x), " object ")
+        ## Should return a SparseArray derivative (COO_SparseArray or
+        ## SVT_SparseArray) from the SparseArray package.
         ans <- SparseArray::read_block_as_sparse(x, viewport)
         SparseArray:::check_returned_SparseArray(
                              ans, dim(viewport),
@@ -84,6 +52,7 @@ setMethod("read_block_as_dense", "ANY",
         if (isFALSE(as.sparse))
             ans <- as.array(ans)
     } else {
+        ## Should return an ordinary array (i.e. dense).
         ans <- read_block_as_dense(x, viewport)
         check_returned_array(ans, dim(viewport),
                              "read_block_as_dense", class(x))
@@ -118,8 +87,7 @@ read_block <- function(x, viewport, as.sparse=NA)
               is.logical(as.sparse),
               length(as.sparse) == 1L)
 
-    #ans <- .OLD_read_block(x, viewport, as.sparse=as.sparse)
-    ans <- .NEW_read_block(x, viewport, as.sparse=as.sparse)
+    ans <- .read_block(x, viewport, as.sparse=as.sparse)
 
     ## Individual read_block_as_dense() and read_block_as_sparse() methods
     ## are not expected to propagate the dimnames so we take care of this
