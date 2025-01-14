@@ -2,8 +2,8 @@
 title: "A quick overview of the _S4Arrays_ package"
 author:
 - name: Hervé Pagès
-  affiliation: Fred Hutchinson Cancer Research Center, Seattle, WA
-date: "Compiled `r doc_date()`;  Modified 8 April 2024"
+  affiliation: Fred Hutch Cancer Center, Seattle, WA
+date: "Compiled `r doc_date()`;  Modified 14 January 2025"
 package: S4Arrays
 vignette: |
   %\VignetteIndexEntry{A quick overview of the S4Arrays package}
