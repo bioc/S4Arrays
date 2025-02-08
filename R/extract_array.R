@@ -87,7 +87,8 @@ setGeneric("extract_array", signature="x",
                       "array-like object (i.e. it must have dimensions)"))
         ans <- standardGeneric("extract_array")
         expected_dim <- get_Nindex_lengths(index, x_dim)
-        check_returned_array(ans, expected_dim, "extract_array", class(x))
+        check_returned_array(ans, expected_dim,
+                             "extract_array", class(x)[[1L]])
     }
 )
 

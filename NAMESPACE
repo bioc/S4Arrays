@@ -19,6 +19,9 @@ import(IRanges)
 ###
 
 exportClasses(
+    ## array_recycling.R:
+    tile,
+
     ## Array-class.R:
     Array,
 
@@ -113,9 +116,11 @@ exportMethods(
     anyNA,
     var,
     nchar,
+    Ops,
 
     ## Methods for generics defined in the methods package:
     coerce, show,
+    kronecker,
 
     ## Methods for generics defined in the BiocGenerics package:
     cbind, rbind,
@@ -143,12 +148,18 @@ export(
     ## array_selection.R:
     Lindex2Mindex, Mindex2Lindex,
 
+    ## array_recycling.R:
+    as_tile,
+
     ## ArrayGrid-class.R:
     DummyArrayViewport, ArrayViewport, makeNindexFromArrayViewport,
     DummyArrayGrid, ArbitraryArrayGrid, RegularArrayGrid,
 
     ## read_block.R:
-    read_block
+    read_block,
+
+    ## Array-kronecker-methods.R:
+    kronecker2
 )
 
 
@@ -163,6 +174,9 @@ export(
 
     ## abind.R:
     abind, arbind, acbind,
+
+    ## arep.R:
+    arep_times, arep_each,
 
     ## dim-tuning-utils.R:
     tune_Array_dims,   # no tune_Array_dims() method defined in S4Arrays!
@@ -203,6 +217,7 @@ export(
 exportMethods(
     colsum,
     abind, arbind, acbind,
+    arep_times, arep_each,
     subset_Array_by_logical_array,
     subset_Array_by_Lindex,
     subset_Array_by_Mindex,

@@ -115,27 +115,31 @@ LCM <- function(x, y)
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### normarg_dim() and normarg_dimnames()
+### as_integer_dim(), normarg_dim() and normarg_dimnames()
 ###
 
-normarg_dim <- function(dim, argname="dim")
+as_integer_dim <- function(dim, what)
 {
-    if (!is.numeric(dim))
-        stop(wmsg("'", argname, "' must be an integer vector"))
+    if (!(is.numeric(dim) && is.vector(dim)))
+        stop(wmsg(what, " must be an integer vector"))
     if (length(dim) == 0L)
-        stop(wmsg("'", argname, "' cannot be an empty vector"))
+        stop(wmsg(what, " cannot be an empty vector"))
     if (any(is.na(dim)))
-        stop(wmsg("'", argname, "' cannot contain NAs"))
+        stop(wmsg(what, " cannot contain NAs"))
     if (any(dim < 0))
-        stop(wmsg("'", argname, "' cannot contain negative values"))
+        stop(wmsg(what, " cannot contain negative values"))
     if (!is.integer(dim)) {
         if (any(dim > .Machine$integer.max))
-            stop(wmsg("'", argname, "' cannot contain values greater ",
-                      "than '.Machine$integer.max' (= 2^31-1 = ",
-                      .Machine$integer.max, ")"))
+            stop(wmsg(what, " cannot contain values greater ",
+                      "than 2^31-1 (= .Machine$integer.max)"))
         dim <- as.integer(dim)
     }
     dim
+}
+
+normarg_dim <- function(dim, argname="dim")
+{
+    as_integer_dim(dim, paste0("'", argname, "'"))
 }
 
 normarg_dimnames <- function(dimnames, dim)
@@ -173,6 +177,20 @@ normarg_dimnames <- function(dimnames, dim)
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Right-pad dim vector with ones
+###
+
+rpad_dim <- function(dim, ndim)
+{
+    stopifnot(is.integer(dim), isSingleInteger(ndim))
+    nd <- ndim - length(dim)
+    if (nd > 0L)
+        dim <- c(dim, rep.int(1L, nd))
+    dim
+}
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### 2 wrappers to dim<- and dimnames<- that try to avoid unnecessary copies
 ### of 'x'
 ###
@@ -191,8 +209,8 @@ set_dim <- function(x, value)
     if (identical(x_dim, value))
         return(x)
 
-    ## Treat vector as 1D array.
     if (is.null(x_dim)) {
+        ## Treat vector as 1D array.
         x <- as.array(x)
         x_dim <- dim(x)
     }
@@ -214,6 +232,21 @@ set_dimnames <- function(x, value)
     if (identical(dimnames(x), value))
         return(x)
     dimnames(x) <- value
+    x
+}
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### set_or_check_dim()
+###
+
+set_or_check_dim <- function(x, dim)
+{
+    x_dim <- dim(x)
+    if (is.null(x_dim)) {
+        dim(x) <- dim
+    } else {
+        stopifnot(identical(x_dim, dim))
+    }
     x
 }
 
@@ -337,22 +370,6 @@ validate_dimnames_slot <- function(x, dim, slotname="dimnames")
                       "must be NULL or a character vector along ",
                       "the corresponding dimension in the object"))
     TRUE
-}
-
-
-### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### set_or_check_dim()
-###
-
-set_or_check_dim <- function(x, dim)
-{
-    x_dim <- dim(x)
-    if (is.null(x_dim)) {
-        dim(x) <- dim
-    } else {
-        stopifnot(identical(x_dim, dim))
-    }
-    x
 }
 
 

@@ -10,20 +10,14 @@
 ### See src/dim_tuning_utils.c for additional information.
 
 
+### Checks that 'value' actually looks like a dim vector and that it
+### will preserve the length of the receiving array.
 ### NOT exported but used in the DelayedArray package!
 normalize_dim_replacement_value <- function(value, x_dim)
 {
     if (is.null(value))
         stop(wmsg("you can't do that, sorry"))
-    if (!is.numeric(value))
-        stop(wmsg("the supplied dim vector must be numeric"))
-    if (length(value) == 0L)
-        stop(wmsg("the supplied dim vector cannot be empty"))
-    if (!is.integer(value))
-        value <- as.integer(value)
-    if (S4Vectors:::anyMissingOrOutside(value, 0L))
-        stop(wmsg("the supplied dim vector cannot contain negative ",
-                  "or NA values"))
+    value <- as_integer_dim(value, "the supplied dim vector")
     prod1 <- prod(value)
     prod2 <- prod(x_dim)
     if (prod1 != prod2)
