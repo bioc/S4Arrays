@@ -1,3 +1,20 @@
+VERSION 1.8.0
+-------------
+
+NEW FEATURES
+
+    o arep_times() and arep_each(): multidimensional versions of
+      base::rep( , times=) and base::rep( , each=).
+
+    o as_tile(): a convenient way to control the direction of recycling in
+      the context of arithmetic and other binary operations between an array
+      and a vector, or between two arrays of distinct dimensions.
+      Still work-in-progress!
+
+    o kronecker() methods for Array objects that work out-of-the-box on Array
+      derivatives that support [ and *.
+
+
 VERSION 1.6.0
 -------------
 

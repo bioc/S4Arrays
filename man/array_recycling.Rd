@@ -14,15 +14,15 @@
 \title{Multidimensional array recycling}
 
 \description{
-  Arithmetic and other binary operations in base R between a matrix or
+  In base R, arithmetic and other binary operations between a matrix or
   array and a vector don't let the user control how the latter should
   be recycled: it's always recycled along the first dimension of the
   matrix or array. This has led users to use various tricks when they
   need recycling along the second dimension (a.k.a. "horizontal recycling"),
-  like the popular "double-transposition" trick: \code{t(t(x) / cs)}.
-  However this is inefficient and inelegant.
+  like the popular "double-transposition" trick: \code{t(t(m) / colSums(m))}.
+  However this is not only inelegant, it's also inefficient.
 
-  \code{as_tile()} is meant to address this.
+  \code{as_tile()} is meant to address that.
 
   It also allows arithmetic and other binary operations between two arrays
   of distinct dimensions (rejected as "non-conformable" by arithmetic

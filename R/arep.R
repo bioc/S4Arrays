@@ -34,6 +34,30 @@
                   "returned an array with incorrect dimensions"))
 }
 
+### About 3x faster than 'base::rep(x, each=)'.
+.fast_rep_each <- function(x, each)
+{
+    stopifnot(isSingleNumber(each))
+    if (!is.integer(each))
+        each <- as.integer(each)
+    rep.int(x, rep.int(each, length(x)))
+}
+
+### Not used at the moment.
+.head_of_ones_meets_tail_of_ones  <- function(a, b)
+{
+    stopifnot(is.integer(a), is.integer(b), length(a) == length(b))
+    idxa <- which(a != 1L)
+    if (length(idxa) == 0L)
+        return(TRUE)
+    idxb <- which(b != 1L)
+    if (length(idxb) == 0L)
+        return(TRUE)
+    idx1 <- idxa[[1L]]            # index of first non-one in 'a'
+    idx2 <- idxb[[length(idxb)]]  # index of last non-one in 'b'
+    idx1 > idx2
+}
+
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### arep_times()
@@ -70,8 +94,18 @@ setGeneric("arep_times", signature="x",
     idx <- which(times != 1L)
     if (length(idx) == 0L)
         return(TRUE)
-    idx1 <- idx[[1L]]
+    idx1 <- idx[[1L]]  # index of first non-one in 'times'
     all(tail(x_dim, n=-idx1) == 1L)
+}
+
+### Equivalent to '.head_of_ones_meets_tail_of_ones(x_dim, times)'.
+.can_use_linear_rep_each <- function(x_dim, times)
+{
+    idx <- which(times != 1L)
+    if (length(idx) == 0L)
+        return(TRUE)
+    idx2 <- idx[[length(idx)]]  # index of last non-one in 'times'
+    all(head(x_dim, n=idx2) == 1L)
 }
 
 ### Only for ordinary arrays at the moment.
@@ -83,14 +117,28 @@ setGeneric("arep_times", signature="x",
     array(x, dim=x_dim*times)
 }
 
+### Only for ordinary arrays at the moment.
+.arep_times_using_linear_rep_each <- function(x, times)
+{
+    stopifnot(is.array(x), is.integer(times))
+    x_dim <- dim(x)
+    stopifnot(length(x_dim) == length(times))
+    array(.fast_rep_each(x, prod(times)), dim=x_dim*times)
+}
+
 ### Default method. Works on any array-like object 'x' that supports `[`.
 .default_arep_times <- function(x, times)
 {
     ## The arep_times() generic already took care of checking/validating 'x'
     ## and 'times'. See above.
     x_dim <- dim(x)
-    if (.can_use_linear_recycling(x_dim, times) && is.array(x))
-        return(.arep_times_using_linear_recycling(x, times))
+    if (is.array(x)) {
+        if (.can_use_linear_recycling(x_dim, times))
+            return(.arep_times_using_linear_recycling(x, times))
+        ## Not the speedup I was hoping for!
+        #if (.can_use_linear_rep_each(x_dim, times))
+        #    return(.arep_times_using_linear_rep_each(x, times))
+    }
     index <- lapply(seq_along(times),
         function(along) rep.int(seq_len(x_dim[[along]]), times[[along]]))
     subset_by_Nindex(x, index)  # relies on `[`
@@ -144,13 +192,6 @@ setGeneric("arep_each", signature="x",
         ans
     }
 )
-
-### About 3x faster than 'base::rep(x, each=)'.
-.fast_rep_each <- function(x, each)
-{
-    stopifnot(isSingleInteger(each))
-    rep.int(x, rep.int(each, length(x)))
-}
 
 ### Default method. Works on any array-like object 'x' that supports `[`.
 .default_arep_each <- function(x, each)
