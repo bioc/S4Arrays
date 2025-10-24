@@ -443,7 +443,9 @@ print_some_array_elements <- function(x)
 ### NOT exported.
 show_compact_array <- function(object)
 {
-    #grey <- make_style("grey")
+    ## Note that crayon has been superseded by cli so use the latter if
+    ## we really want to play with colors.
+    #grey <- crayon::make_style("grey")
     #cat(grey(array_as_one_line_summary(object)))
     cat(array_as_one_line_summary(object))
     if (any(dim(object) == 0L)) {

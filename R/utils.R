@@ -6,16 +6,6 @@
 ###
 
 
-### TODO: Move this to S4Vectors (or BiocBaseUtils).
-load_package_gracefully <- function(package, ...)
-{
-    if (!requireNamespace(package, quietly=TRUE))
-        stop("Could not load package ", package, ". Is it installed?\n\n  ",
-             wmsg("Note that ", ..., " requires the ", package, " package. ",
-                  "Please install it with:"),
-             "\n\n    BiocManager::install(\"", package, "\")")
-}
-
 ### TODO: This should probably go to S4Vectors (but maybe find a better name
 ### for it first).
 seq2 <- function(to, by)
@@ -46,9 +36,7 @@ bplapply2 <- function(X, FUN, ..., BPPARAM=NULL)
 {
     if (length(X) <= 1L || is.null(BPPARAM))
         return(lapply(X, FUN, ...))
-    if (!requireNamespace("BiocParallel", quietly=TRUE))
-        stop(wmsg("Couldn't load the BiocParallel package. Please ",
-                  "install the BiocParallel package and try again."))
+    S4Vectors:::load_package_gracefully("BiocParallel", "for this operation")
     ## The only value that is allowed for HDF5_USE_FILE_LOCKING is "FALSE"
     ## (all uppercase).
     ## Note sure this is actually a good idea so commenting out for now.

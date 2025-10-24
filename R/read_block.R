@@ -37,7 +37,8 @@ setMethod("read_block_as_dense", "ANY",
 ###
 
 .load_SparseArray_for_read_block <- function(...)
-    load_package_gracefully("SparseArray", "calling read_block() ", ...)
+    S4Vectors:::load_package_gracefully("SparseArray",
+                                        "to call read_block() ", ...)
 
 .read_block <- function(x, viewport, as.sparse=NA)
 {

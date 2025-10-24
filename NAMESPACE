@@ -6,7 +6,6 @@ importClassFrom(Matrix, CsparseMatrix, dgCMatrix, lgCMatrix, ngCMatrix,
                         RsparseMatrix, dgRMatrix, lgRMatrix, ngRMatrix,
                         TsparseMatrix, dgTMatrix, lgTMatrix, ngTMatrix)
 
-importFrom(crayon, make_style)
 importFrom(abind, abind)
 
 import(BiocGenerics)
