@@ -1,23 +1,27 @@
 ### =========================================================================
-### Manipulating an Nindex
+### Manipulating an N-index
 ### -------------------------------------------------------------------------
 ###
 ### Nothing in this file is exported.
 ###
-### An Nindex is a "multidimensional subsetting index". It's represented as a
+### An N-index is a "multidimensional subsetting index". It's represented as a
 ### list with one subscript per dimension in the array-like object to subset.
 ### NULL list elements in it are interpreted as missing subscripts, that is, as
 ### subscripts that run along the full extend of the corresponding dimension.
-### Before an Nindex can be used in a call to `[`, `[<-`, `[[` or `[[<-`, the
-### NULL list elements must be replaced with objects of class "name".
+### See man/array_selection.Rd for more information.
+###
+### Note that before an N-index can be used in a call to `[`, `[<-`, `[[`
+### or `[[<-`, the NULL list elements must be replaced with objects of
+### class "name". This is handled by utility .make_subscripts_from_Nindex()
+### defined below.
 ###
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### Normalization of an Nindex
+### Normalization of an N-index
 ###
 
-### NOT exported but used in the HDF5Array package!
+### Used in the HDF5Array package!
 normalizeSingleBracketSubscript2 <- function(i, x_len, x_names=NULL)
 {
     ## We support subsetting by an array-like subscript but only if the
@@ -47,7 +51,8 @@ normalizeSingleBracketSubscript2 <- function(i, x_len, x_names=NULL)
     normalizeSingleBracketSubscript(i, x)
 }
 
-### Normalize 'Nindex' i.e. check and turn each non-NULL list element
+### Used in DelayedArray!
+### Normalizes 'Nindex' i.e. check and turn each non-NULL list element
 ### into a positive integer vector that is a valid subscript along the
 ### corresponding dimension in 'x'.
 normalize_Nindex <- function(Nindex, x)
@@ -77,36 +82,25 @@ normalize_Nindex <- function(Nindex, x)
         })
 }
 
-### Assume 'Nindex' is normalized (see above).
-### Return a logical vector with one logical per dimension indicating
-### whether the corresponding subscript in 'Nindex' reaches all valid
-### positions along the dimension.
-subscript_has_nogap <- function(Nindex, dim)
+### Used in SparseArray, DelayedArray, and HDF5Array!
+### Returns the lengths of the subscripts in 'Nindex'. The length of a
+### missing subscript is the length it would have after expansion.
+get_Nindex_lengths <- function(Nindex, dim)
 {
     stopifnot(is.list(Nindex), length(Nindex) == length(dim))
-    vapply(seq_along(Nindex),
-        function(along) {
-            Li <- Nindex[[along]]
-            if (is.null(Li))
-                return(TRUE)
-            d <- dim[[along]]
-            if (length(Li) < d)
-                return(FALSE)
-            hits <- logical(d)
-            hits[Li] <- TRUE
-            all(hits)
-        },
-        logical(1L),
-        USE.NAMES=FALSE)
+    ans <- lengths(Nindex)
+    missing_idx <- which(S4Vectors:::sapply_isNULL(Nindex))
+    ans[missing_idx] <- dim[missing_idx]
+    ans
 }
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### Other Nindex utilities
+### From user subscripts to N-index and vice versa
 ###
 
 ### For use in "[", "[<-", "[[", or "[[<-" methods to extract the user
-### supplied subscripts as an Nindex. NULL subscripts are replace with
+### supplied subscripts as an N-index. NULL subscripts are replace with
 ### integer(0). Missing subscripts are set to NULL.
 extract_Nindex_from_syscall <- function(call, eframe)
 {
@@ -155,15 +149,21 @@ expand_Nindex_RangeNSBS <- function(Nindex)
     subscripts
 }
 
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Subsetting/subassignment by an N-index
+###
+
 subset_by_Nindex <- function(x, Nindex, drop=FALSE)
 {
     subscripts <- .make_subscripts_from_Nindex(Nindex, x)
     do.call(`[`, c(list(x), subscripts, list(drop=drop)))
 }
 
-### Return the modified array.
-### Work on any array-like object that supports subassignment ('[<-').
-replace_by_Nindex <- function(x, Nindex, value)
+### Used in DelayedArray!
+### Returns the modified array.
+### Works on any array-like object that supports subassignment ('[<-').
+subassign_by_Nindex <- function(x, Nindex, value)
 {
     subscripts <- .make_subscripts_from_Nindex(Nindex, x)
     do.call(`[<-`, c(list(x), subscripts, list(value=value)))
@@ -180,28 +180,99 @@ subset_dimnames_by_Nindex <- function(dimnames, Nindex)
     ans <- lapply(setNames(seq_len(ndim), names(dimnames)),
                   function(along) {
                       dn <- dimnames[[along]]
-                      i <- Nindex[[along]]
-                      if (is.null(dn) || is.null(i))
+                      subscript <- Nindex[[along]]
+                      if (is.null(dn) || is.null(subscript))
                           return(dn)
-                      extractROWS(dn, i)
+                      extractROWS(dn, subscript)
                   })
     simplify_NULL_dimnames(ans)
 }
 
-### Used in HDF5Array!
-### Return the lengths of the subscripts in 'Nindex'. The length of a
-### missing subscript is the length it would have after expansion.
-get_Nindex_lengths <- function(Nindex, dim)
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### subset_Nindex_by_Nindex()
+###
+
+### Used in SparseArray!
+### Assumes 'Nindex' is normalized (see normalize_Nindex() above). This
+### is not checked.
+### Returns a normalized N-index parallel to 'Nindex' and 'Nindex2'.
+### TODO: Try to use this in DelayedArray:::subset_DelayedSubset().
+subset_Nindex_by_Nindex <- function(Nindex, Nindex2)
+{
+    stopifnot(is.list(Nindex))
+    if (is.null(Nindex2))
+        return(Nindex)
+    ndim <- length(Nindex)
+    if (!(is.list(Nindex2) && length(Nindex2) == ndim))
+        stop(wmsg("'Nindex2' must be a list of the same length as 'Nindex'"))
+    lapply(seq_len(ndim),
+        function(along) {
+            subscript <- Nindex[[along]]
+            subscript2 <- Nindex2[[along]]
+            if (is.null(subscript2))
+                return(subscript)
+            stopifnot(is.numeric(subscript2))
+            if (!is.integer(subscript2))
+                subscript2 <- as.integer(subscript2)
+            if (is.null(subscript))
+                return(subscript2)
+            subscript[subscript2]
+        })
+}
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Other N-index utilities
+###
+
+### Used in SparseArray!
+### Assumes 'Nindex' is normalized (see normalize_Nindex() above). This
+### is not checked.
+### Returns a normalized N-index parallel to 'Nindex'.
+get_Nindex_order <- function(Nindex)
+{
+    stopifnot(is.list(Nindex))
+    lapply(Nindex,
+        function(subscript) {
+            if (is.null(subscript))
+                return(subscript)
+            ## According to '?base::order', the radix method is guaranted
+            ## to be stable.
+            oo <- base::order(subscript, method="radix")
+            ## We only keep indices of the last unique values.
+            oo[!duplicated(subscript[oo], fromLast=TRUE)]
+        }
+    )
+}
+
+### Used in DelayedArray!
+### Assumes 'Nindex' is normalized (see normalize_Nindex() above). This
+### is not checked.
+### Returns a logical vector with one logical per dimension indicating
+### whether the corresponding subscript in 'Nindex' reaches all valid
+### positions along the dimension.
+subscript_has_nogap <- function(Nindex, dim)
 {
     stopifnot(is.list(Nindex), length(Nindex) == length(dim))
-    ans <- lengths(Nindex)
-    missing_idx <- which(S4Vectors:::sapply_isNULL(Nindex))
-    ans[missing_idx] <- dim[missing_idx]
-    ans
+    vapply(seq_along(Nindex),
+        function(along) {
+            subscript <- Nindex[[along]]
+            if (is.null(subscript))
+                return(TRUE)
+            d <- dim[[along]]
+            if (length(subscript) < d)
+                return(FALSE)
+            hits <- logical(d)
+            hits[subscript] <- TRUE
+            all(hits)
+        },
+        logical(1L),
+        USE.NAMES=FALSE)
 }
 
 ### Convert 'Nindex' to a "linear index".
-### Return the "linear index" as an integer vector if prod(dim) <=
+### Returns the "linear index" as an integer vector if prod(dim) <=
 ### .Machine$integer.max, otherwise as a vector of doubles.
 to_linear_index <- function(Nindex, dim)
 {
@@ -213,10 +284,10 @@ to_linear_index <- function(Nindex, dim)
     }
     for (along in seq_along(Nindex)) {
         d <- dim[[along]]
-        i <- Nindex[[along]]
-        if (is.null(i))
-            i <- seq_len(d)
-        ans <- rep((i - 1L) * p, each=length(ans)) + ans
+        subscript <- Nindex[[along]]
+        if (is.null(subscript))
+            subscript <- seq_len(d)
+        ans <- rep((subscript - 1L) * p, each=length(ans)) + ans
         p <- p * d
     }
     ans

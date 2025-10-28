@@ -25,8 +25,8 @@ setGeneric("write_block", signature="sink",
     }
 )
 
-### Based on replace_by_Nindex() which is based on subassignment ('[<-'),
-### so work on any array-like object 'sink' that supports subassignment.
+### Based on subassign_by_Nindex() which is based on subassignment ('[<-'),
+### so works on any array-like object 'sink' that supports subassignment.
 ### Thanks to this method, write_block() will work out-of-the-box on an
 ### ordinary array and other in-memory array-like object that supports
 ### subassignment (e.g. SparseArray object from the SparseArray package
@@ -54,7 +54,7 @@ setMethod("write_block", "ANY",
             }
         }
         Nindex <- makeNindexFromArrayViewport(viewport)
-        replace_by_Nindex(sink, Nindex, block)
+        subassign_by_Nindex(sink, Nindex, block)
     }
 )
 
