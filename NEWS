@@ -1,3 +1,11 @@
+VERSION 1.10.0
+--------------
+
+SIGNIFICANT USER-VISIBLE CHANGES
+
+    o Drop dependency on the crayon package.
+
+
 VERSION 1.8.0
 -------------
 
