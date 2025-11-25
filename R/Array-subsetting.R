@@ -22,7 +22,7 @@ setGeneric("subset_Array_by_Mindex", signature="x",
     function(x, Mindex) standardGeneric("subset_Array_by_Mindex")
 )
 setGeneric("subset_Array_by_Nindex", signature="x",
-    function(x, Nindex) standardGeneric("subset_Array_by_Nindex")
+    function(x, Nindex, drop=TRUE) standardGeneric("subset_Array_by_Nindex")
 )
 
 setMethod("subset_Array_by_logical_array", "Array",
@@ -47,7 +47,7 @@ setMethod("subset_Array_by_Lindex", "Array",
 setMethod("subset_Array_by_Mindex", "Array", .subset_Array_by_Mindex)
 
 setMethod("subset_Array_by_Nindex", "Array",
-    function(x, Nindex)
+    function(x, Nindex, drop=TRUE)
         stop(wmsg(class(x)[[1L]], " objects don't support this ",
                   "form of subsetting at the moment"))
 )
@@ -81,14 +81,8 @@ setMethod("subset_Array_by_Nindex", "Array",
     }
     if (nsubscript != length(x_dim))
         stop(wmsg("incorrect number of subscripts"))
-    ## Note that this normalization will coerce the numeric subscripts
-    ## in 'Nindex' to integer. However this coercion is no longer necessary
-    ## because subset_Array_by_Nindex() should be able to handle subscripts
-    ## of type "double".
-    ## TODO: Consider using a normalization process here that preserves the
-    ## numeric subscripts.
     Nindex <- normalize_Nindex(Nindex, x)
-    ans <- subset_Array_by_Nindex(x, Nindex)
+    ans <- subset_Array_by_Nindex(x, Nindex, drop=drop)
     if (drop)
         ans <- drop(ans)
     ans
