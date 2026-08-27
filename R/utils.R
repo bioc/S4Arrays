@@ -559,7 +559,7 @@ set_user_option <- function(name, value)
     if (filepath == "") {
         ## Options file doesn't exist yet. This means that the current
         ## process is the root of the (possibly nested) master/workers tree,
-        ## that is, the R session explicitely started by the user at the
+        ## that is, the R session explicitly started by the user at the
         ## command line (or via RStudio).
         writable_filepath <- .create_root_file(my_pid)
     } else {
