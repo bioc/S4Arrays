@@ -11,7 +11,7 @@ Description: The S4Arrays package defines the Array virtual class to be
 biocViews: Infrastructure, DataRepresentation
 URL: https://bioconductor.org/packages/S4Arrays
 BugReports: https://github.com/Bioconductor/S4Arrays/issues
-Version: 1.13.1
+Version: 1.13.2
 License: Artistic-2.0
 Encoding: UTF-8
 Authors@R: c(
@@ -28,7 +28,8 @@ Suggests: BiocParallel, SparseArray (>= 0.0.4), DelayedArray, HDF5Array,
 VignetteBuilder: knitr
 Collate: utils.R
 	rowsum.R
-	abind.R
+	coerce_abind_input_objects.R
+	simple_abind.R
 	aperm2.R
 	array_selection.R
 	Nindex-utils.R
@@ -46,5 +47,6 @@ Collate: utils.R
 	read_block.R
 	write_block.R
 	show-utils.R
+	abind.R
 	Array-kronecker-methods.R
 	zzz.R

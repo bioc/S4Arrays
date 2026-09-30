@@ -32,7 +32,7 @@ test_that("default abind() method", {
     ## its own little dispatch mechanism. See S4Arrays/R/abind.R for the
     ## details.
 
-    ## --- 1. Dispatch on the abind() generic ---
+    ## --- 1. Pass the objects to bind in a list ---
 
     expected <- abind0(.TEST_arrays, along=1)
     expect_identical(default_abind(.TEST_arrays, along=1), expected)
@@ -46,18 +46,12 @@ test_that("default abind() method", {
     current <- default_abind(.TEST_arrays, along=1, use.first.dimnames=FALSE)
     expect_identical(current, expected)
 
-    expected_words <- c("all", "objects", "must", "be",
-                        "supplied", "via", "list")
+    expected_words <- c("passing", "objects", "to", "bind", "in", "list")
     regexp <- paste0("\\b", expected_words, "\\b", collapse=".*")
     expect_error(default_abind(a1, .TEST_arrays), regexp, ignore.case=TRUE)
     expect_error(default_abind(.TEST_arrays, a1), regexp, ignore.case=TRUE)
 
-    ## --- 2. Dispatch on S4Arrays:::.abind_as_Array() ---
-
-    ## This is tested in the SparseArray package by calling abind() on a
-    ## mix of SparseArray objects and ordinary arrays.
-
-    ## --- 3. Dispatch on S4Arrays:::simple_abind2() ---
+    ## --- 2. Dispatch on S4Arrays:::simple_abind2() ---
 
     expected <- abind0(m1, m2, m3)
     expect_identical(default_abind(m1, m2, m3), expected)
@@ -83,7 +77,8 @@ test_that("default abind() method", {
     expect_identical(default_abind(m3, a4, along=4), expected)
     expect_identical(default_abind(m3, a4, rev.along=0), expected)
 
-    ## --- 4. Dispatch on abind::abind() wrapper abind0() ---
+    ## --- 3. Because we use crazy args, dispatch is on abind::abind() ---
+    ## ---     wrapper abind0() instead of S4Arrays:::simple_abind2()  ---
 
     expected <- abind0(m1, m2, m3, use.first.dimnames=TRUE)
     current <- default_abind(m1, m2, m3, use.first.dimnames=TRUE)
@@ -93,7 +88,50 @@ test_that("default abind() method", {
     current <- default_abind(m1, m2, m3, use.first.dimnames=FALSE)
     expect_identical(current, expected)
 
-    ## --- Some edge cases ---
+    ## --- 4. At least one object in 'objects' is not an ordinary array ---
+    ## ---                          or matrix                           ---
+
+    ## Bind ordinary matrix and lgeMatrix/dgCMatrix objects.
+    x <- m1
+    y <- as(m2 %% 4L <= 1L, "lgeMatrix")
+    z <- as(m3, "dgCMatrix")
+    for (along in 1:2) {
+        FUN <- if (along == 1L) rbind else cbind
+        expect_identical(default_abind(x, along=along), FUN(x))
+        expect_identical(default_abind(y, along=along), FUN(y))
+        expect_identical(default_abind(z, along=along), FUN(z))
+        expect_identical(default_abind(x, y, along=along), FUN(x, y))
+        expect_identical(default_abind(y, x, along=along), FUN(y, x))
+        expect_identical(default_abind(x, z, along=along), FUN(x, z))
+        expect_identical(default_abind(z, x, along=along), FUN(z, x))
+        FUN2 <- function(...) as(FUN(...), "dgCMatrix")
+        expect_identical(default_abind(y, z, along=along), FUN2(y, z))
+        expect_identical(default_abind(z, y, along=along), FUN2(z, y))
+        expect_identical(default_abind(x, y, z, along=along), FUN2(x, y, z))
+        expect_identical(default_abind(x, z, y, along=along), FUN2(x, z, y))
+        expect_identical(default_abind(y, x, z, along=along), FUN2(y, x, z))
+        expect_identical(default_abind(y, z, x, along=along), FUN2(y, z, x))
+        expect_identical(default_abind(z, x, y, along=along), FUN2(z, x, y))
+        expect_identical(default_abind(z, y, x, along=along), FUN2(z, y, x))
+        expect_identical(
+            default_abind(NULL, x, NULL, y, NULL, NULL, x, z, along=along),
+            FUN2(NULL, x, NULL, y, NULL, NULL, x, z))
+    }
+
+    ## Add SparseArray objects to the mix.
+    library(SparseArray)
+    svt <- as(m3, "SVT_SparseArray")
+    coo <- as(m3, "COO_SparseArray")
+    for (along in 1:2) {
+        current <- default_abind(svt, x, y, z, along=along)
+        expect_true(is(current, "SparseArray"))
+        current <- default_abind(coo, x, y, z, along=along)
+        expect_true(is(current, "SparseArray"))
+        current <- default_abind(x, coo, NULL, y, svt, z, along=along)
+        expect_true(is(current, "SparseArray"))
+    }
+
+    ## --- 5. Some edge cases ---
     expect_identical(default_abind(a1), a1)
     expect_identical(default_abind(), NULL)
 })
@@ -201,5 +239,51 @@ test_that("acbind() on arrays", {
     expect_identical(acbind(b1, a1), expected)      # binary op
     expected <- cbind(a1, b1, a1, deparse.level=0)
     expect_identical(acbind(a1, b1, a1), expected)  # ternary op
+})
+
+test_that("rbind()/cbind() on array-like objects", {
+    m1 <- .TEST_matrices[[1L]]
+    m2 <- .TEST_matrices[[2L]][1:3, ]
+    m3 <- .TEST_matrices[[3L]][1:3, ]
+
+    x <- m1
+    y <- as(m2 %% 4L <= 1L, "lgeMatrix")
+    z <- as(m3, "dgCMatrix")
+
+    library(SparseArray)
+    svt <- as(m3, "SVT_SparseMatrix")
+    coo <- as(m3, "COO_SparseMatrix")
+
+    library(DelayedArray)
+    M <- DelayedArray(m1)
+
+    FUN2 <- function(FUN, ...) do.call(FUN, lapply(list(...), as.matrix))
+    for (FUN in list(rbind, cbind)) {
+        current <- FUN(svt, x, y, z)
+        expect_true(is(current, "SVT_SparseMatrix"))
+        expect_identical(as.matrix(current), FUN2(FUN, svt, x, y, z))
+        current <- FUN(coo, x, y, z)
+        expect_true(is(current, "SVT_SparseMatrix"))
+        expect_identical(as.matrix(current), FUN2(FUN, coo, x, y, z))
+        current <- FUN(x, coo, NULL, y, svt, z)
+        expect_true(is(current, "SVT_SparseMatrix"))
+        expect_identical(as.matrix(current), FUN2(FUN, x, coo, y, svt, z))
+
+        current <- FUN(svt, NULL, M)
+        expect_true(is(current, "DelayedMatrix"))
+        expect_identical(as.matrix(current), FUN2(FUN, svt, M))
+        current <- FUN(M, z)
+        expect_true(is(current, "DelayedMatrix"))
+        expect_identical(as.matrix(current), FUN2(FUN, M, z))
+        current <- FUN(z, M)
+        expect_true(is(current, "DelayedMatrix"))
+        expect_identical(as.matrix(current), FUN2(FUN, z, M))
+        current <- FUN(x, M, y)
+        expect_true(is(current, "DelayedMatrix"))
+        expect_identical(as.matrix(current), FUN2(FUN, x, M, y))
+        current <- FUN(M, x, coo, NULL, y, svt, NULL, z)
+        expect_true(is(current, "DelayedMatrix"))
+        expect_identical(as.matrix(current), FUN2(FUN, M, x, coo, y, svt, z))
+    }
 })
 

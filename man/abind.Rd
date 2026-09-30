@@ -5,6 +5,7 @@
 
 \alias{abind}
 \alias{abind,ANY-method}
+\alias{abind,Matrix-method}
 
 \alias{arbind}
 \alias{acbind}

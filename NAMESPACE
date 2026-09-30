@@ -179,9 +179,6 @@ export(
     rowsum,            # no rowsum() method defined in S4Arrays!
     colsum,
 
-    ## abind.R:
-    abind, arbind, acbind,
-
     ## arep.R:
     arep_times, arep_each,
 
@@ -217,13 +214,15 @@ export(
     read_block_as_dense,
 
     ## write_block.R:
-    write_block
+    write_block,
+
+    ## abind.R:
+    abind, arbind, acbind
 )
 
 ### Same list as above.
 exportMethods(
     colsum,
-    abind, arbind, acbind,
     arep_times, arep_each,
     subset_Array_by_logical_array,
     subset_Array_by_Lindex,
@@ -238,6 +237,7 @@ exportMethods(
     extract_array,
     is_sparse,
     read_block_as_dense,
-    write_block
+    write_block,
+    abind, arbind, acbind
 )
 
